@@ -1,0 +1,104 @@
+---
+title: Gemini
+description: Integration with Gemini's API services, supporting both completion and embedding models.
+---
+
+import { Cards } from 'nextra/components'
+
+# Gemini Integration
+
+The Gemini provider in Rig offers integration with Gemini's API services, supporting both completion and embedding models. It provides a client-based architecture for interacting with Gemini's models.
+
+To use Gemini, you need a Google account that has access to the Gemini API (and a Gemini API key).
+
+## Basic Usage
+To use the Gemini module, make sure `rig-core` is added as a dependency to your Rust project (alongside `tokio` with the `macros` and `rt-multi-thread` for the purposes of the example if you want to run the code below). Then you can simply import the Gemini provider and use it as below.
+
+> **Note**: Make sure your environment variable `GEMINI_API_KEY` is set before running the example code.
+
+```rust
+use rig::{
+    completion::Prompt,
+    providers::gemini::{self, completion::gemini_api_types::GenerationConfig},
+};
+
+#[tracing::instrument(ret)]
+#[tokio::main]
+async fn main() -> Result<(), anyhow::Error> {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .with_target(false)
+        .init();
+
+    // Initialize the Google Gemini client
+    let client = gemini::Client::from_env();
+
+    // Create agent with a single context prompt
+    let agent = client
+        .agent(gemini::completion::GEMINI_1_5_PRO)
+        .preamble("Be creative and concise. Answer directly and clearly.")
+        .temperature(0.5)
+        // The `GenerationConfig` utility struct helps construct a typesafe `additional_params`
+        .additional_params(serde_json::to_value(GenerationConfig {
+            top_k: Some(1),
+            top_p: Some(0.95),
+            candidate_count: Some(1),
+            ..Default::default()
+        })?) // Unwrap the Result to get the Value
+        .build();
+
+    tracing::info!("Prompting the agent...");
+
+    // Prompt the agent and print the response
+    let response = agent
+        .prompt("How much wood would a woodchuck chuck if a woodchuck could chuck wood? Infer an answer.")
+        .await;
+
+    tracing::info!("Response: {:?}", response);
+
+    match response {
+        Ok(response) => println!("{}", response),
+        Err(e) => {
+            tracing::error!("Error: {:?}", e);
+            return Err(e.into());
+        }
+    }
+
+    Ok(())
+}
+```
+
+## Available Models
+Below is a list of available models that have been added as const variables to the provider module. If there is a supported model you would like to use but is not provided below, you can simply use a string literal instead.
+
+### Completion Models
+- `GEMINI_1_5_FLASH`: The `gemini-1.5-flash` model.
+- `GEMINI_1_5_PRO`: The `gemini-1.5-pro` model.
+- `GEMINI_1_5_PRO_8B`: The `gemini-1.5-pro-8b` model.
+- `GEMINI_1_0_PRO`: The `gemini-1.0-pro` model.
+
+### Embedding Models
+- `EMBEDDING_001`: The `embedding-001` model.
+- `EMBEDDING_004`: The `text-embedding-004` model.
+
+## Supported Features
+
+### Completions
+Google text completions are done using the Content Generation API - which puts the messages into "parts". You can find out more about this [on the Content Generation API docs.](https://ai.google.dev/api/generate-content)
+
+For ease of use, Rig exposes a public API similar to OpenAI's Chat Completion API that you can find out more about [here.](/docs/4_concepts/0_completion)
+
+### Embeddings
+Like the Content Generation API, the Gemini Embeddings API also use parts. You can find out more about this [here.](https://ai.google.dev/api/embeddings)
+
+For ease of use, Rig exposes a public unified API that you can find out more about [here.](/docs/4_concepts/3_embedding)
+
+### Tool usage
+Gemini also additionally supports tool usage. Rig exposes a public unified API for tool creation and usage that you can find more about here. TODO: Add link
+
+<br />
+
+<Cards>
+<Cards.Card title="Gemini API Reference" href="https://ai.google.dev/api?lang=web"/>
+<Cards.Card title="API Reference (docs.rs)" href="https://docs.rs/rig-core/latest/rig/providers/gemini/index.html"/>
+</Cards>

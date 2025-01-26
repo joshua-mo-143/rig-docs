@@ -1,0 +1,56 @@
+---
+title: DeepSeek
+description: Integration with DeepSeek LLM models, supporting completion models through the DeepSeek API.
+---
+
+import { Cards } from 'nextra/components'
+
+# DeepSeek Integration
+
+[DeepSeek](https://www.deepseek.com/) is a series of open-source LLMs by the AI-focused company of the same name.
+
+The DeepSeek provider in Rig offers integration with the DeepSeek API, supporting completion models.
+
+Note that to use this module, you will need a DeepSeek API key. 
+
+## Basic Usage
+
+To use the DeepSeek module, make sure `rig-core` is added as a dependency to your Rust project (alongside `tokio` with the `macros` and `rt-multi-thread` for the purposes of the example if you want to run the code below). Then you can simply import the DeepSeek provider and use it as below.
+
+> **Note**: Make sure your environment variable `DEEPSEEK_API_KEY` is set before running the example code.
+
+```rust
+use rig::{completion::Prompt, providers};
+
+#[tokio::main]
+async fn main() -> Result<(), anyhow::Error> {
+    let client = providers::deepseek::Client::from_env();
+    let agent = client
+        .agent(providers::deepseek::DEEPSEEK_CHAT)
+        .preamble("You are a helpful assistant.")
+        .build();
+
+    let answer = agent.prompt("Tell me a joke").await?;
+    println!("Answer: {}", answer);
+    Ok(())
+}
+```
+
+## Available Models
+Below is a list of available models that have been added as const variables to the provider module. If there is a supported model you would like to use but is not provided below, you can simply use a string literal instead.
+
+### Completion models
+- `DEEPSEEK_CHAT`: Deepseek chat model (uses DeepSeek-V3).
+
+## Supported Features
+Below is a list of supported features for the DeepSeek provider.
+
+### Completions
+The completion object follows the Chat Completions standard API (like OpenAI). You can find out more about the completion request and response objects by checking out [the Chat Completions page of the DeepSeek API reference.](https://api-docs.deepseek.com/api/create-chat-completion)
+
+<br />
+
+<Cards>
+<Cards.Card title="DeepSeek API documentation" href="https://api-docs.deepseek.com/api/deepseek-api"/>
+<Cards.Card title="Rig API Reference (docs.rs)" href="https://docs.rs/rig-core/latest/rig/providers/deepseek/index.html"/>
+</Cards>

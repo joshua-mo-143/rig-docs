@@ -1,0 +1,88 @@
+---
+title: Perplexity
+description: Integration with the Perplexity API, supporting chat completions.
+---
+
+import { Cards } from 'nextra/components'
+
+# Perplexity Integration
+
+The Perplexity provider in Rig offers integration with the Perplexity AI API, supporting completion models.
+
+Note that to use this module, you will need a Perplexity API key.
+
+## Basic Usage
+
+To use the Perplexity module, make sure `rig-core` is added as a dependency to your Rust project (alongside `tokio` with the `macros` and `rt-multi-thread` for the purposes of the example if you want to run the code below). Then you can simply import the Perplexity provider and use it as below.
+
+> **Note**: Make sure your environment variable `PERPLEXITY_API_KEY` is set before running the example code.
+
+```rust
+use std::env;
+
+use rig::{
+    completion::Prompt,
+    providers::{self, perplexity::LLAMA_3_1_70B_INSTRUCT},
+};
+use serde_json::json;
+
+#[tokio::main]
+async fn main() -> Result<(), anyhow::Error> {
+    // Create OpenAI client
+    let client = providers::perplexity::Client::new(
+        &env::var("PERPLEXITY_API_KEY").expect("PERPLEXITY_API_KEY not set"),
+    );
+
+    // Create agent with a single context prompt
+    let agent = client
+        .agent(LLAMA_3_1_70B_INSTRUCT)
+        .preamble("Be precise and concise.")
+        .temperature(0.5)
+        .additional_params(json!({
+            "return_related_questions": true,
+            "return_images": true
+        }))
+        .build();
+
+    // Prompt the agent and print the response
+    let response = agent
+        .prompt("When and where and what type is the next solar eclipse?")
+        .await?;
+    println!("{}", response);
+
+    Ok(())
+}
+```
+
+## Available Models
+Below is a list of available models that have been added as const variables to the provider module. If there is a supported model you would like to use but is not provided below, you can simply use a string literal instead.
+
+### Completion Models
+- `LLAMA_3_1_SONAR_SMALL_ONLINE`: The smallest version of a Llama 3.1 model.
+- `LLAMA_3_1_SONAR_LARGE_ONLINE`: A medium size version of a Llama 3.1 model.
+- `LLAMA_3_1_SONAR_HUGE_ONLINE`: The largest version of a Llama 3.1 model.
+- `LLAMA_3_1_SONAR_SMALL_CHAT`: A small version of a Llama 3.1 model designed for conversations.
+- `LLAMA_3_1_SONAR_LARGE_CHAT`: A large version of a Llama 3.1 model designed for conversations.
+- `LLAMA_3_1_8B_INSTRUCT`: A Llama 3.1 instruct model using 8B parameters.
+- `LLAMA_3_1_70B_INSTRUCT`: A Llama 3.1 instruct model using 70B parameters.
+
+## Supported Features
+Below is a list of supported features for the Perplexity provider.
+
+### Completions
+The Perplexity AI API follows the Chat Completions standard (like OpenAI). Additionally, there are a number of extra parameters supported by their API. Find out more by checking out [the Chat Completions page of the Perplexity API reference.](https://docs.perplexity.ai/api-reference/chat-completions)
+
+The [`CompletionRequest`](https://github.com/0xPlaygrounds/rig/blob/main/rig-core/src/completion.rs#L249) object used by Rig allows for additional objects to be inserted as a `serde_json::Value` (using the `serde_json` crate). In this case, you would want to use the `serde_json::json!` macro like so:
+```rust
+let value = serde_json::json!({
+    "foo":"bar",
+	"baz":"qux",
+});
+```
+
+<br />
+
+<Cards>
+<Cards.Card title="Perplexity API Reference" href="https://docs.perplexity.ai/api-reference/chat-completions"/>
+<Cards.Card title="API Reference (docs.rs)" href="https://docs.rs/rig-core/latest/rig/providers/perplexity/index.html"/>
+</Cards>

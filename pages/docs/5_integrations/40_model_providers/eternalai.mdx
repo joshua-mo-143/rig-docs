@@ -1,0 +1,112 @@
+---
+title: Eternal AI
+description: Integration with Eternal AI's API services, supporting both completion and embedding models.
+---
+
+import { Cards } from 'nextra/components'
+
+# EternalAI Integration
+
+[EternalAI](https://eternalai.org/) is a is an L2 blockchain designed for smart contracts focused on AI & ML. Using Eternal AI, you can deploy agents on-chain as well as train and deploy your own models.
+
+The EternalAI provider in Rig offers integration with EternalAI's API services, supporting both completion and embedding models. Note that this provider is provided as the `rig-eternalai` crate rather than a module in the `rig-core` crate.
+
+To use EternalAI you either must have an API key or an agent already deployed to the EternalAI platform.
+
+## Basic Usage
+
+```rust
+use rig::agent::AgentBuilder;
+use rig_eternalai::providers::eternalai::{CompletionModel, NOUS_RESEARCH_HERMES_3_LLAMA_3_1_70B_FP8};
+use rig::{completion::Prompt};
+
+#[tokio::main]
+async fn main() -> Result<(), anyhow::Error> {
+    println!("Running basic agent with eternalai");
+    basic_eternalai().await?;
+
+    println!("\n\nAll agents ran successfully");
+    Ok(())
+}
+
+fn client() -> providers::eternalai::Client {
+    rig_eternalai::providers::eternalai::Client::from_env()
+}
+
+fn partial_agent_eternalai() -> AgentBuilder<CompletionModel> {
+    let client = client();
+    client.agent(
+        NOUS_RESEARCH_HERMES_3_LLAMA_3_1_70B_FP8,
+        // Option::from("45762"),
+        None,
+    )
+}
+
+async fn basic_eternalai() -> Result<(), anyhow::Error> {
+    let comedian_agent = partial_agent_eternalai()
+        .preamble("You are a comedian here to entertain the user using humour and jokes.")
+        .build();
+
+    // Prompt the agent and print the response
+    let response = comedian_agent.prompt("Entertain me!").await?;
+    println!("{}", response);
+
+    Ok(())
+}
+```
+
+## Available Models
+
+### Completion Models
+- `NOUS_RESEARCH_HERMES_3_LLAMA_3_1_70B_FP8`: The `NousResearch/Hermes-3-Llama-3.1-70B-FP8` model.
+- `UNSLOTH_LLAMA_3_3_70B_INSTRUCT_BNB_4BIT`: The `unsloth/Llama-3.3-70B-Instruct-bnb-4bit` model.
+
+### Embedding Models
+- `TEXT_EMBEDDING_3_LARGE`: The `text-embedding-3-large` model.
+- `TEXT_EMBEDDING_3_SMALL`: The `text-embedding-3-small` model.
+- `TEXT_EMBEDDING_ADA_002`: The `text-embedding-ada-002` model.
+
+## Supported Features
+
+### Completions
+The EternalAI API supports chat completions and uses some additional parameters which you can attach onto your completion request. Check out [the EternalAI Chat Completion API](https://docs.eternalai.org/eternal-ai/decentralized-inference-api/api/chat-completion) for more information.
+
+The [`CompletionRequest`](https://github.com/0xPlaygrounds/rig/blob/main/rig-core/src/completion.rs#L249) object used by Rig allows for additional objects to be inserted as a `serde_json::Value` (using the `serde_json` crate). In this case, you would want to use the `serde_json::json!` macro like so:
+```rust
+let value = serde_json::json!({
+    "foo":"bar",
+	"baz":"qux",
+});
+```
+
+### Embeddings
+The EternalAI API also additionally supports using models to create embeddings for RAG or vector search. The model API exposed by `rig-eternalai` follows the implementation set out [TODO: Put trait page here].
+
+### Testing your dAgent
+If you've created a dAgent on the EternalAI platform, you can use the following URL schema to try using it as an endpoint:
+
+```bash
+POST https://agent.api.eternalai.org/api/agent/{agentId}/chat/completions
+```
+
+Note that when setting the URL, you need to use the following URL schema as `/chat/completions` is automatically appended on the end of the URL for completions.
+
+```bash
+https://agent.api.eternalai.org/api/agent/{agentId}
+```
+
+Find out more at the [Agent Completion docs page.](https://docs.eternalai.org/eternal-ai/decentralized-inference-api/api/agent-completion)
+
+## Special Considerations
+
+### Chain ID
+Note that to interact with a model on-chain, you will need the chain ID. You can find this [in the EternalAI docs.](https://docs.eternalai.org/eternal-ai/decentralized-inference-api/onchain-models)
+
+
+
+<br />
+
+<Cards>
+<Cards.Card title="EternalAI API Reference" href="https://docs.eternalai.org/eternal-ai/decentralized-inference-api/api"/>
+<Cards.Card title="API Reference (docs.rs)" href="https://docs.rs/rig-core/latest/rig/providers/eternalai/index.html"/>
+</Cards>

@@ -1,0 +1,111 @@
+---
+title: Cohere
+description: Integration with Cohere's API services, supporting both completion and embedding models.
+---
+
+import { Cards } from 'nextra/components'
+
+# Cohere Integration
+
+The Cohere provider in Rig offers integration with Cohere's API services, supporting both completion and embedding models. 
+
+## Basic Usage
+
+To use the Cohere module, make sure `rig-core` is added as a dependency to your Rust project (alongside `tokio` with the `macros` and `rt-multi-thread` for the purposes of the example if you want to run the code below). Then you can simply import the Cohere provider and use it as below.
+
+> **Note**: Make sure your environment variable `COHERE_API_KEY` is set before running the example code.
+
+```rust
+
+use std::env;
+
+use rig::{
+    completion::{Completion, Prompt},
+    providers::cohere::Client as CohereClient,
+};
+use serde_json::json;
+
+#[tokio::main]
+async fn main() -> Result<(), anyhow::Error> {
+    // Create Cohere client
+    let cohere_api_key = env::var("COHERE_API_KEY").expect("COHERE_API_KEY not set");
+    let cohere_client = CohereClient::new(&cohere_api_key);
+
+    let klimadao_agent = cohere_client
+        .agent("command-r")
+        .temperature(0.0)
+        .additional_params(json!({
+            "connectors": [{"id":"web-search", "options":{"site": "https://docs.klimadao.finance"}}]
+        }))
+        .build();
+
+    // Prompt the model and print the response
+    // We use `prompt` to get a simple response from the model as a String
+    let response = klimadao_agent.prompt("Tell me about BCT tokens?").await?;
+
+    println!("\n\nCoral: {:?}", response);
+
+    // Prompt the model and get the citations
+    // We use `completion` to allow use to customize the request further and
+    // get a more detailed response from the model.
+    // Here the response is of type CompletionResponse<cohere::CompletionResponse>
+    // which contains `choice` (Message or ToolCall) as well as `raw_response`,
+    // the underlying providers' raw response.
+    let response = klimadao_agent
+        .completion("Tell me about BCT tokens?", vec![])
+        .await?
+        .additional_params(json!({
+            "connectors": [{"id":"web-search", "options":{"site": "https://docs.klimadao.finance"}}]
+        }))
+        .send()
+        .await?;
+
+    println!(
+        "\n\nCoral: {:?}\n\nCitations:\n{:?}",
+        response.choice, response.raw_response.citations
+    );
+
+    Ok(())
+}
+```
+
+## Available Models
+Below is a list of available models that have been added as const variables to the provider module. If there is a supported model you would like to use but is not provided below, you can simply use a string literal instead.
+
+### Completion Models
+- `COMMAND_R_PLUS`: The `command-r-plus` completion model.
+- `COMMAND_R`: The `command-r` completion model.
+- `COMMAND`: The `command` completion model.
+- `COMMAND_NIGHTLY`: The `command-nightly` completion model.
+- `COMMAND_LIGHT`: The `command-light` completion model.
+- `COMMAND_LIGHT_NIGHTLY`: The `command-light-nightly` completion model.
+
+### Embedding Models
+- `EMBED_ENGLISH_V3`: A Cohere embed model focusing on English (1024 dims).
+- `EMBED_ENGLISH_LIGHT_V3`: A light version of the Cohere embed model focusing on English (384 dims).
+- `EMBED_MULTILINGUAL_V3`: A multilingual Cohere embed model (1024 dims).
+- `EMBED_MULTILINGUAL_LIGHT_V3`: &str = A light version of `embed-multilingual-v3.0` (384 dims).
+- `EMBED_ENGLISH_V2`: A Cohere embed model focusing on English (4096 dims).
+- `EMBED_ENGLISH_LIGHT_V2`: A light version of the Cohere embed model focusing on English (1024 dims).
+- `EMBED_MULTILINGUAL_V2`: A multilingual Cohere embed model (768 dims).
+
+## Supported Features
+
+### Completions
+Cohere's Chat API follows the same API as the Chat Completions API used by OpenAI. You can also additionally find more about this [on their Chat API docs.](https://docs.cohere.com/v2/docs/chat-api)
+
+### Embeddings
+Cohere also has embedding models - you can find out more by checking the embedding models list, which will provide the number of dimensions per model. To find out more about embed model application use cases, check out  [the official documentation page on embed models.](https://docs.cohere.com/v2/docs/cohere-embed)
+
+### Tool usage
+Cohere models support function calling through a specialized JSON format. The provider automatically handles conversion between Rig's tool definitions and Cohere's expected format. To create your own tools, you can find out more [here.](/docs/4_concepts/2_tools)
+
+
+For detailed API reference and additional features, see the Cohere API documentation and Rig's API documentation.
+
+<br />
+
+<Cards>
+<Cards.Card title="Cohere API Reference" href="https://docs.cohere.com/v2/reference/about"/>
+<Cards.Card title="API Reference (docs.rs)" href="https://docs.rs/rig-core/latest/rig/providers/cohere/index.html"/>
+</Cards>

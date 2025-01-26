@@ -1,0 +1,74 @@
+---
+title: xAI
+description: Integration with xAI's API services, supporting both completion and embedding models.
+---
+
+import { Cards } from 'nextra/components'
+
+# xAI Integration
+
+The xAI provider in Rig offers integration with OpenAI's API services, supporting both completion and embedding models. It provides a client-based architecture for interacting with xAI's models.
+
+## Basic Usage
+To use the xAI module, make sure `rig-core` is added as a dependency to your Rust project (alongside `tokio` with the `macros` and `rt-multi-thread` for the purposes of the example if you want to run the code below). Then you can simply import the xAI provider and use it as below.
+
+> **Note**: Make sure your environment variable `XAI_API_KEY` is set before running the example code.
+
+```rust
+use rig::providers::xai;
+use rig::Embed;
+
+#[derive(Embed, Debug)]
+struct Greetings {
+    #[embed]
+    message: String,
+}
+
+#[tokio::main]
+async fn main() -> Result<(), anyhow::Error> {
+    // Initialize the xAI client
+    let client = xai::Client::from_env();
+
+    let embeddings = client
+        .embeddings(xai::embedding::EMBEDDING_V1)
+        .document(Greetings {
+            message: "Hello, world!".to_string(),
+        })?
+        .document(Greetings {
+            message: "Goodbye, world!".to_string(),
+        })?
+        .build()
+        .await
+        .expect("Failed to embed documents");
+
+    println!("{:?}", embeddings);
+
+    Ok(())
+}
+```
+
+## Available Models
+Below is a list of available models that have been added as const variables to the provider module. If there is a supported model you would like to use but is not provided below, you can simply use a string literal instead.
+
+### Completion Models
+- `GROK_BETA`: The `grok-beta` completion model.
+
+### Embedding Models
+- `EMBEDDING_V1`: The `v1` model (for embeddings).
+
+## Supported Features
+
+### Completions
+Find out more about the OpenAI chat completions API [here.](https://platform.openai.com/docs/api-reference/chat)
+
+### Embeddings
+Find out more about the embeddings API [here.](https://platform.openai.com/docs/api-reference/embeddings)
+
+### Tool usage
+OpenAI also supports tool usage. Rig exposes a public unified API for tool creation and usage that you can find more about here. TODO: Add link
+<br />
+
+<Cards>
+<Cards.Card title="xAI API Overview" href="https://docs.x.ai/docs/overview"/>
+<Cards.Card title="API Reference (docs.rs)" href="https://docs.rs/rig-core/latest/rig/providers/xai/index.html"/>
+</Cards>
