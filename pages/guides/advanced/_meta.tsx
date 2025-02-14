@@ -1,4 +1,4 @@
 export default {
-  "21_discord_bot": "Discord Bot",
-  "22_flight_assistant": "Flight Search Agent"
-}
+  discord_bot: "Discord Bot",
+  flight_assistant: "Flight Search Agent",
+};
